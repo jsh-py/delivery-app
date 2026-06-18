@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+.git
+Dockerfile.dev
+docker-compose.yml
+Makefile
+*.pdf
+*.md
