@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createReview, ReviewActionState } from '@/app/actions/review';
 import { updateOrderStatus } from '@/app/actions/order';
 import { X, Star } from 'lucide-react';
+import { showToast } from '@/lib/toast';
 
 interface OrderItem {
   id: string;
@@ -51,10 +52,16 @@ export default function OrdersClient({ orders }: OrdersClientProps) {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [rating, setRating] = useState(5);
   const [state, formAction, isPending] = useActionState(createReview, initialActionState);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    orderId: string;
+    status: 'PENDING' | 'DELIVERING' | 'COMPLETED';
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     if (state?.success) {
-      alert('리뷰가 등록되었습니다!');
+      showToast('리뷰가 성공적으로 등록되었습니다! ✨');
       setSelectedOrder(null);
       setRating(5);
       router.refresh();
@@ -66,24 +73,15 @@ export default function OrdersClient({ orders }: OrdersClientProps) {
     setRating(5);
   };
 
-  const handleStatusUpdate = async (orderId: string, status: 'PENDING' | 'DELIVERING' | 'COMPLETED') => {
-    const confirmUpdate = window.confirm(
-      status === 'DELIVERING'
-        ? '배달을 시작하시겠습니까?'
-        : '배달을 완료 처리하시겠습니까?'
-    );
-    if (!confirmUpdate) return;
-    
-    try {
-      const result = await updateOrderStatus(orderId, status);
-      if (result.error) {
-        alert(result.error);
-      } else {
-        router.refresh();
-      }
-    } catch (e) {
-      alert('주문 상태 변경 중 오류가 발생했습니다.');
-    }
+  const handleStatusUpdate = (orderId: string, status: 'PENDING' | 'DELIVERING' | 'COMPLETED') => {
+    setConfirmModal({
+      isOpen: true,
+      orderId,
+      status,
+      message: status === 'DELIVERING'
+        ? '🛵 배달을 시작하시겠습니까?'
+        : '✅ 배달을 완료 처리하시겠습니까?',
+    });
   };
 
   return (
@@ -254,6 +252,48 @@ export default function OrdersClient({ orders }: OrdersClientProps) {
                 {isPending ? '리뷰 등록 중...' : '리뷰 등록 완료'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <div className="modal-overlay">
+          <div className="modal-backdrop" onClick={() => setConfirmModal(null)} />
+          <div className="modal-content glass-panel" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <h3 style={{ marginBottom: '16px' }}>주문 상태 변경</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: '1.6' }}>
+              {confirmModal.message}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button className="btn btn-outline" onClick={() => setConfirmModal(null)}>
+                취소
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={async () => {
+                  const { orderId, status } = confirmModal;
+                  setConfirmModal(null);
+                  try {
+                    const result = await updateOrderStatus(orderId, status);
+                    if (result.error) {
+                      showToast(result.error, 'error');
+                    } else {
+                      showToast(
+                        status === 'DELIVERING'
+                          ? '배달이 시작되었습니다! 🛵'
+                          : '배달이 완료되었습니다! ✨'
+                      );
+                      router.refresh();
+                    }
+                  } catch (e) {
+                    showToast('주문 상태 변경 중 오류가 발생했습니다.', 'error');
+                  }
+                }}
+              >
+                확인
+              </button>
+            </div>
           </div>
         </div>
       )}

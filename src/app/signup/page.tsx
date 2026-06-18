@@ -16,11 +16,41 @@ export default function SignupPage() {
 
   React.useEffect(() => {
     if (state?.success) {
-      alert('회원가입이 완료되었습니다!');
-      router.push('/');
-      router.refresh();
+      const timer = setTimeout(() => {
+        router.push('/');
+        router.refresh();
+      }, 2000);
+      return () => clearTimeout(timer);
     }
   }, [state, router]);
+
+  if (state?.success) {
+    return (
+      <div className="auth-wrapper">
+        <div className="auth-card glass-panel" style={{ padding: '60px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+          <div className="success-icon" style={{ fontSize: '64px', animation: 'bounce 1s infinite' }}>🎉</div>
+          <h1 className="auth-title">회원가입 완료!</h1>
+          <p className="auth-subtitle" style={{ marginBottom: 0, lineHeight: '1.6' }}>
+            성공적으로 회원가입이 완료되었습니다.<br />
+            잠시 후 메인 화면으로 이동합니다...
+          </p>
+          <div className="loading-bar-container" style={{ width: '100%', height: '4px', background: 'var(--border-glass)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div className="loading-bar" style={{ width: '100%', height: '100%', background: 'var(--primary)', animation: 'load 2s linear forwards' }} />
+          </div>
+          <style>{`
+            @keyframes load {
+              from { width: 0%; }
+              to { width: 100%; }
+            }
+            @keyframes bounce {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-10px); }
+            }
+          `}</style>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-wrapper">

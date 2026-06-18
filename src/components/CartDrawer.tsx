@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { X, Plus, Minus, Trash2 } from 'lucide-react';
 import { createOrder } from '@/app/actions/order';
+import { showToast } from '@/lib/toast';
 
 interface CartDrawerProps {
   isLoggedIn: boolean;
@@ -28,7 +29,7 @@ export default function CartDrawer({ isLoggedIn }: CartDrawerProps) {
 
   const handleCheckout = async () => {
     if (!isLoggedIn) {
-      alert('주문하려면 로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+      showToast('주문하려면 로그인이 필요합니다.', 'error');
       setIsCartOpen(false);
       router.push('/login');
       return;
@@ -53,7 +54,7 @@ export default function CartDrawer({ isLoggedIn }: CartDrawerProps) {
       if (result.error) {
         setError(result.error);
       } else {
-        alert('주문이 완료되었습니다!');
+        showToast('주문이 완료되었습니다! 🍕');
         clearCart();
         setIsCartOpen(false);
         router.push('/orders');
