@@ -16,6 +16,14 @@ export default async function RestaurantDetailPage({ params }: PageProps) {
       menus: {
         orderBy: { name: 'asc' },
       },
+      reviews: {
+        include: {
+          user: {
+            select: { name: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
     },
   });
 
@@ -27,6 +35,7 @@ export default async function RestaurantDetailPage({ params }: PageProps) {
     <RestaurantDetailClient
       restaurant={restaurant}
       menus={restaurant.menus}
+      reviews={restaurant.reviews}
     />
   );
 }

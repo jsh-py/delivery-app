@@ -12,6 +12,16 @@ interface Menu {
   image: string;
 }
 
+interface Review {
+  id: string;
+  rating: number;
+  content: string;
+  createdAt: Date | string;
+  user: {
+    name: string;
+  };
+}
+
 interface Restaurant {
   id: string;
   name: string;
@@ -24,6 +34,7 @@ interface Restaurant {
 interface RestaurantDetailClientProps {
   restaurant: Restaurant;
   menus: Menu[];
+  reviews: Review[];
 }
 
 const CATEGORY_STYLES: Record<string, { gradient: string; emoji: string }> = {
@@ -35,7 +46,7 @@ const CATEGORY_STYLES: Record<string, { gradient: string; emoji: string }> = {
   "default": { gradient: "linear-gradient(135deg, #ff9f43, #ff5e3a)", emoji: "🍱" }
 };
 
-export default function RestaurantDetailClient({ restaurant, menus }: RestaurantDetailClientProps) {
+export default function RestaurantDetailClient({ restaurant, menus, reviews = [] }: RestaurantDetailClientProps) {
   const { addToCart } = useCart();
   const style = CATEGORY_STYLES[restaurant.category] || CATEGORY_STYLES.default;
 
@@ -49,6 +60,17 @@ export default function RestaurantDetailClient({ restaurant, menus }: Restaurant
     });
   };
 
+  const reviewCount = reviews.length;
+  const avgRating = reviewCount > 0
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(1)
+    : '0.0';
+
+  const maskName = (name: string) => {
+    if (name.length <= 1) return name;
+    if (name.length === 2) return name[0] + '*';
+    return name[0] + '*'.repeat(name.length - 2) + name[name.length - 1];
+  };
+
   return (
     <div className="detail-container">
       {/* Restaurant Header Banner */}
@@ -59,6 +81,10 @@ export default function RestaurantDetailClient({ restaurant, menus }: Restaurant
         <div className="banner-info">
           <span className="banner-tag">{restaurant.category}</span>
           <h1 className="banner-title">{restaurant.name}</h1>
+          <div className="rating-summary">
+            <span className="rating-star">⭐ {avgRating}</span>
+            <span className="rating-count">({reviewCount}개의 평가)</span>
+          </div>
           <p className="banner-desc">{restaurant.description}</p>
           <p className="banner-address">📍 {restaurant.address}</p>
         </div>
@@ -87,6 +113,41 @@ export default function RestaurantDetailClient({ restaurant, menus }: Restaurant
                 </button>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Reviews Section */}
+      <div className="reviews-section-container">
+        <h2 className="section-title">고객 리뷰</h2>
+        {reviews.length === 0 ? (
+          <div className="no-reviews-card glass-panel">
+            <span>💬</span>
+            <p>아직 등록된 리뷰가 없습니다.</p>
+            <p className="no-reviews-sub">첫 번째 리뷰의 주인공이 되어 보세요!</p>
+          </div>
+        ) : (
+          <div className="reviews-list">
+            {reviews.map((review) => {
+              const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+              const formattedDate = new Date(review.createdAt).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+              return (
+                <div key={review.id} className="review-card glass-panel">
+                  <div className="review-header">
+                    <div className="review-user-info">
+                      <span className="review-user-name">{maskName(review.user.name)}</span>
+                      <span className="review-stars">{stars}</span>
+                    </div>
+                    <span className="review-date">{formattedDate}</span>
+                  </div>
+                  <p className="review-content">{review.content}</p>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -141,6 +202,22 @@ export default function RestaurantDetailClient({ restaurant, menus }: Restaurant
         .banner-title {
           font-size: 28px;
           color: var(--text-main);
+        }
+        .rating-summary {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+        }
+        .rating-star {
+          font-weight: 700;
+          color: #ffb800;
+          background: rgba(255, 184, 0, 0.1);
+          padding: 4px 8px;
+          border-radius: var(--radius-sm);
+        }
+        .rating-count {
+          color: var(--text-muted);
         }
         .banner-desc {
           font-size: 15px;
@@ -226,6 +303,71 @@ export default function RestaurantDetailClient({ restaurant, menus }: Restaurant
           color: var(--text-muted);
           text-align: center;
           padding: 40px;
+        }
+        .reviews-section-container {
+          display: flex;
+          flex-direction: column;
+          margin-top: 20px;
+        }
+        .no-reviews-card {
+          padding: 48px;
+          text-align: center;
+          color: var(--text-muted);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          font-size: 15px;
+        }
+        .no-reviews-card span {
+          font-size: 36px;
+          margin-bottom: 8px;
+        }
+        .no-reviews-sub {
+          font-size: 12px;
+        }
+        .reviews-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .review-card {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          transition: border-color 0.2s ease;
+        }
+        .review-card:hover {
+          border-color: var(--primary);
+        }
+        .review-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .review-user-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .review-user-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-main);
+        }
+        .review-stars {
+          color: #ffb800;
+          font-size: 14px;
+          letter-spacing: 1px;
+        }
+        .review-date {
+          font-size: 12px;
+          color: var(--text-muted);
+        }
+        .review-content {
+          font-size: 14px;
+          color: var(--text-main);
+          line-height: 1.5;
         }
       `}</style>
     </div>
