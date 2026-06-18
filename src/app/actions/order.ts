@@ -58,3 +58,30 @@ export async function createOrder(data: OrderInput) {
     return { error: '주문 중 오류가 발생했습니다. 다시 시도해 주세요.' };
   }
 }
+
+export async function updateOrderStatus(orderId: string, status: 'PENDING' | 'DELIVERING' | 'COMPLETED') {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: '로그인이 필요합니다.' };
+  }
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order || order.userId !== user.id) {
+      return { error: '유효하지 않은 주문입니다.' };
+    }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Update order status error:', error);
+    return { error: '주문 상태 변경 중 오류가 발생했습니다.' };
+  }
+}

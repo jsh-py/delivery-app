@@ -3,6 +3,7 @@
 import React, { useActionState, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createReview, ReviewActionState } from '@/app/actions/review';
+import { updateOrderStatus } from '@/app/actions/order';
 import { X, Star } from 'lucide-react';
 
 interface OrderItem {
@@ -65,6 +66,26 @@ export default function OrdersClient({ orders }: OrdersClientProps) {
     setRating(5);
   };
 
+  const handleStatusUpdate = async (orderId: string, status: 'PENDING' | 'DELIVERING' | 'COMPLETED') => {
+    const confirmUpdate = window.confirm(
+      status === 'DELIVERING'
+        ? '배달을 시작하시겠습니까?'
+        : '배달을 완료 처리하시겠습니까?'
+    );
+    if (!confirmUpdate) return;
+    
+    try {
+      const result = await updateOrderStatus(orderId, status);
+      if (result.error) {
+        alert(result.error);
+      } else {
+        router.refresh();
+      }
+    } catch (e) {
+      alert('주문 상태 변경 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <div className="orders-container">
       <h1 className="section-title">내 주문 내역</h1>
@@ -95,9 +116,27 @@ export default function OrdersClient({ orders }: OrdersClientProps) {
                     <span className="order-date">{formattedDate}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {order.status === 'PENDING' && (
+                      <button
+                        onClick={() => handleStatusUpdate(order.id, 'DELIVERING')}
+                        className="btn btn-outline"
+                        style={{ padding: '6px 12px', fontSize: '12px', borderColor: '#2e86de', color: '#2e86de' }}
+                      >
+                        🛵 배달 시작
+                      </button>
+                    )}
+                    {order.status === 'DELIVERING' && (
+                      <button
+                        onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}
+                        className="btn btn-outline"
+                        style={{ padding: '6px 12px', fontSize: '12px', borderColor: '#10ac84', color: '#10ac84' }}
+                      >
+                        ✅ 배달 완료
+                      </button>
+                    )}
                     {order.review ? (
                       <span className="review-done-badge">리뷰 작성 완료</span>
-                    ) : (
+                    ) : order.status === 'COMPLETED' ? (
                       <button
                         onClick={() => handleOpenModal(order)}
                         className="btn btn-secondary"
@@ -105,7 +144,7 @@ export default function OrdersClient({ orders }: OrdersClientProps) {
                       >
                         리뷰 쓰기
                       </button>
-                    )}
+                    ) : null}
                     <span
                       className="order-status-badge"
                       style={{ backgroundColor: status.color + '15', color: status.color, border: `1px solid ${status.color}30` }}
