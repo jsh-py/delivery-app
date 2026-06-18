@@ -16,6 +16,7 @@ export default function SignupPage() {
 
   React.useEffect(() => {
     if (state?.success) {
+      alert('회원가입이 완료되었습니다!');
       router.push('/');
       router.refresh();
     }
